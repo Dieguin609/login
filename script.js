@@ -2,33 +2,37 @@ let selectedGender = null;
 const audio = document.getElementById('myAudio');
 const musicIcon = document.getElementById('musicIcon');
 
-// Função para tocar música assim que carregar ou no primeiro clique
-function startMusic() {
-    audio.play().then(() => {
-        musicIcon.className = "fas fa-pause";
-    }).catch(() => {
-        musicIcon.className = "fas fa-play";
-    });
-}
-
-window.onload = startMusic;
-
-// Tenta dar play ao clicar em qualquer lugar (contorno de bloqueio de áudio)
-document.body.onclick = () => {
-    if (audio.paused && musicIcon.className === "fas fa-play") {
-        startMusic();
-    }
-};
-
+// Função para tocar/pausar a música
 function togglePlay() {
     if (audio.paused) {
         audio.play();
-        musicIcon.className = "fas fa-pause";
+        musicIcon.classList.remove('fa-play');
+        musicIcon.classList.add('fa-pause');
     } else {
         audio.pause();
-        musicIcon.className = "fas fa-play";
+        musicIcon.classList.remove('fa-pause');
+        musicIcon.classList.add('fa-play');
     }
 }
+
+// Tenta iniciar a música ao carregar
+window.onload = () => {
+    audio.play().then(() => {
+        musicIcon.classList.add('fa-pause');
+    }).catch(() => {
+        musicIcon.classList.add('fa-play');
+        console.log("Auto-play bloqueado pelo navegador.");
+    });
+};
+
+// Garante que o play funcione no primeiro clique na tela (regra dos navegadores)
+document.body.addEventListener('click', () => {
+    if (audio.paused && musicIcon.classList.contains('fa-play')) {
+        audio.play();
+        musicIcon.classList.remove('fa-play');
+        musicIcon.classList.add('fa-pause');
+    }
+}, { once: true });
 
 // Alternar entre Login e Registro
 function toggleForm(type) {
@@ -54,28 +58,26 @@ function selectGender(gender) {
     }
 }
 
-// --- INTEGRAÇÃO COM CEF EMIT (SAMP) ---
-
+// Enviar para o SAMP (Login)
 function login() {
     const pass = document.getElementById('login-pass').value;
     if (pass.length > 0) {
-        // Envia para o seu SkyPixel.pwn
-        cef.emit("server:onPlayerLogin", pass);
+        if (typeof cef !== 'undefined') cef.emit("server:onPlayerLogin", pass);
     } else {
         alert("Digite sua senha!");
     }
 }
 
+// Enviar para o SAMP (Registro)
 function register() {
     const pass = document.getElementById('reg-pass').value;
     if (pass.length > 0 && selectedGender) {
-        // Envia senha e gênero para o seu SkyPixel.pwn
-        cef.emit("server:onPlayerRegister", pass, selectedGender);
+        if (typeof cef !== 'undefined') cef.emit("server:onPlayerRegister", pass, selectedGender);
         
-        // Volta para o login após registrar, como você pediu
+        // Pequeno delay para garantir o envio antes de trocar a tela
         setTimeout(() => {
             toggleForm('log');
-        }, 500);
+        }, 200);
     } else {
         alert("Preencha todos os campos!");
     }
