@@ -2,7 +2,7 @@ let selectedGender = null;
 const audio = document.getElementById('myAudio');
 const musicIcon = document.getElementById('musicIcon');
 
-// Função para tocar/pausar a música
+// --- CONTROLE DE MÚSICA ---
 function togglePlay() {
     if (audio.paused) {
         audio.play();
@@ -15,17 +15,14 @@ function togglePlay() {
     }
 }
 
-// Tenta iniciar a música ao carregar
 window.onload = () => {
     audio.play().then(() => {
         musicIcon.classList.add('fa-pause');
     }).catch(() => {
         musicIcon.classList.add('fa-play');
-        console.log("Auto-play bloqueado pelo navegador.");
     });
 };
 
-// Garante que o play funcione no primeiro clique na tela (regra dos navegadores)
 document.body.addEventListener('click', () => {
     if (audio.paused && musicIcon.classList.contains('fa-play')) {
         audio.play();
@@ -34,7 +31,7 @@ document.body.addEventListener('click', () => {
     }
 }, { once: true });
 
-// Alternar entre Login e Registro
+// --- NAVEGAÇÃO ---
 function toggleForm(type) {
     if(type === 'reg') {
         document.getElementById('login-box').style.display = 'none';
@@ -45,40 +42,63 @@ function toggleForm(type) {
     }
 }
 
-// Selecionar Gênero
 function selectGender(gender) {
     selectedGender = gender;
     document.getElementById('m-btn').classList.remove('active');
     document.getElementById('f-btn').classList.remove('active');
-    
-    if(gender === 'M') {
-        document.getElementById('m-btn').classList.add('active');
-    } else {
-        document.getElementById('f-btn').classList.add('active');
-    }
+    if(gender === 'M') document.getElementById('m-btn').classList.add('active');
+    else document.getElementById('f-btn').classList.add('active');
 }
 
-// Enviar para o SAMP (Login)
+// --- COMUNICAÇÃO COM O SERVIDOR (SAMP) ---
+
 function login() {
     const pass = document.getElementById('login-pass').value;
     if (pass.length > 0) {
         if (typeof cef !== 'undefined') cef.emit("server:onPlayerLogin", pass);
     } else {
-        alert("Digite sua senha!");
+        showError("Por favor, digite sua senha.");
     }
 }
 
-// Enviar para o SAMP (Registro)
 function register() {
     const pass = document.getElementById('reg-pass').value;
     if (pass.length > 0 && selectedGender) {
         if (typeof cef !== 'undefined') cef.emit("server:onPlayerRegister", pass, selectedGender);
-        
-        // Pequeno delay para garantir o envio antes de trocar a tela
-        setTimeout(() => {
-            toggleForm('log');
-        }, 200);
+        setTimeout(() => { toggleForm('log'); }, 200);
     } else {
-        alert("Preencha todos os campos!");
+        showError("Preencha a senha e selecione o gênero.");
     }
+}
+
+// --- RECEBER ERRO DO SERVIDOR (NOVIDADE) ---
+
+if (typeof cef !== 'undefined') {
+    // Escuta o grito do servidor: cef_emit(playerid, "client:showLoginError", ...)
+    cef.on("client:showLoginError", (mensagem) => {
+        showError(mensagem);
+    });
+}
+
+// Função para mostrar erro de forma elegante
+function showError(msg) {
+    const inputGroup = document.querySelector('.input-group');
+    const input = document.getElementById('login-pass');
+    
+    // Altera o placeholder para mostrar o erro
+    input.value = "";
+    input.placeholder = msg;
+    inputGroup.style.borderColor = "#ff4444";
+    inputGroup.style.boxShadow = "0 0 10px rgba(255, 68, 68, 0.2)";
+
+    // Efeito de "sacudir" (opcional, requer CSS)
+    inputGroup.classList.add('shake');
+    
+    // Reseta o estilo após 3 segundos
+    setTimeout(() => {
+        inputGroup.style.borderColor = "rgba(255, 255, 255, 0.1)";
+        inputGroup.style.boxShadow = "none";
+        input.placeholder = "SUA SENHA";
+        inputGroup.classList.remove('shake');
+    }, 3000);
 }
